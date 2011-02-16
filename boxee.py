@@ -73,9 +73,12 @@ class BoxeeRemote:
         for node in dom.getElementsByTagName('BDP1'):
             self.BOXEE_PORT = node.getAttribute('httpPort')
 
-    def convert_command( self, human, boxee ):
+    def convert_command( self, human ):
         """ Converts a command like 'vol 50' to 'SetVolume(50)' or passes thru"""
-        pass
+        return human
+
+    def run_human_command( self, command ):
+        self.run_command( self.convert_command( command ) )
 
     def run_command( self, command, argument=None ):
         """ Runs a command against the boxee box """
@@ -92,14 +95,24 @@ def main():
 
     if not boxee.BOXEE_ADDRESS or not boxee.BOXEE_PORT:
         boxee.parse_boxee_response( boxee.broadcast_for_boxee_info() )
+
+    interactive_mode = False
+
+    import sys    
+    for arg in sys.argv:
+        if arg == '-r':
+            pass
+        if arg == '-i':
+            interactive_mode = True
     
-    #if '-r' command line arg, do command, else loop for commands
+    #boxee.run_command("Pause")
     
-    boxee.run_command("Pause")
     
-    # Commands
-    #while True:
-    #    pass #TODO
+    if interactive_mode:
+        print "Enter commands: "
+        print "See http://developer.boxee.tv/Remote_Control_Interface for a full list"
+        while True:
+            boxee.run_human_command( raw_input('boxee: ') )
     
 
 # RUN
