@@ -15,6 +15,7 @@ Copy boxee.py to your local PATH (often /usr/local/bin )
 Example (OS X, Linux):
 
 $ sudo cp boxee.py /usr/local/bin/boxee
+
 $ sudo chmod +x /usr/local/bin/boxee
 
 No configuration is required, as boxee.py will find the boxee app
