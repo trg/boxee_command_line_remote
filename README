@@ -2,8 +2,22 @@ Command line Boxee remote.
 
 Tested with Boxee Box & Python 2.6 on Mac OS X
 
+INSTALLATION
+
+Copy boxee.py to your local
+
+Example (OS X 10.6):
+
+$ sudo cp boxee.py /usr/local/bin/boxee
+$ sudo chmod +x /usr/local/bin/boxee
+
 USAGE
 
-To launch interactive mode:
+From the terminal, interactive mode:
 
-./boxee.py -i
+$ boxee
+
+To send a command directly:
+
+$ boxee vol 50
+
