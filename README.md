@@ -32,3 +32,12 @@ To send a command directly:
 
 $ boxee vol 50
 
+
+Known issues
+------------
+
+May have unexpected results if more than one Boxee Box or app is on your network.
+
+Occasionally network-related hanging.
+
+Has crashed my Boxee Box a few times.
