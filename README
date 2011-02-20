@@ -1,17 +1,27 @@
+boxee.py
+========
+
+What it is
+----------
 Command line Boxee remote.
 
 Tested with Boxee Box & Python 2.6 on Mac OS X
 
-INSTALLATION
+Installation
+------------
 
-Copy boxee.py to your local
+Copy boxee.py to your local PATH (often /usr/local/bin )
 
-Example (OS X 10.6):
+Example (OS X, Linux):
 
 $ sudo cp boxee.py /usr/local/bin/boxee
 $ sudo chmod +x /usr/local/bin/boxee
 
-USAGE
+No configuration is required, as boxee.py will find the boxee app
+on your network.
+
+Usage
+-----
 
 From the terminal, interactive mode:
 
