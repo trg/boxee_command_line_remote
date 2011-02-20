@@ -3,10 +3,13 @@
 import socket
 import hashlib
 import urllib2
+import sys    
 
 class BoxeeRemote:
     
     def __init__(self):
+        
+        # Begin User configurable data
         
         # Boxee will tell us this data when it pings us back
         # if this is not None, it will skip the broadcast phase
@@ -16,6 +19,10 @@ class BoxeeRemote:
         # Debug mode will print things
         # Set to False to avoid printing out messages
         self.DEBUG = False
+
+        # End User configurable data
+
+        
 
 
         # Where we want boxee to ping us back at
@@ -40,17 +47,37 @@ class BoxeeRemote:
                   version="%s" challenge="%s"
                   signature="%s" />''' % ( self.BOXEE_APPLICATION, self.BOXEE_VERSION, self.BOXEE_CHALLENGE, self.BOXEE_SIGNATURE )
         
-    def broadcast_for_boxee_info( self ):
-        self.status("Broadcasting for Boxee")
+        
+        
+        
+        # Broadcast for Boxee info if not already set
+        if not self.BOXEE_ADDRESS or not self.BOXEE_PORT:
+            self.discover();
+    
+    def discover(self):
+        """Discovers and saves info about Boxee device on the network."""
+        self._parse_boxee_response( self._broadcast_for_boxee_info() )
+
+    def run_human_command( self, command ):
+        """Run a non-formated boxee command, eg "vol 50" """
+        self.run_command( self._convert_command( command ) )
+
+    def run_command( self, command, argument=None ):
+        """Runs a command against the boxee box. Command must match API syntax, eg SetVolume(50)"""
+        url = self.BOXEE_API_URL % ( self.BOXEE_ADDRESS, self.BOXEE_PORT, command, argument )
+        urllib2.urlopen(url)
+
+    def _broadcast_for_boxee_info( self ):
+        self._status("Broadcasting for Boxee")
         sock = socket.socket( socket.AF_INET, # Internet
                               socket.SOCK_DGRAM ) # UDP
 
         sock.setsockopt( socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
         sock.sendto( self.UDP_MESSAGE_TO_BOXEE, self.UDP_BOXEE_BROADCAST )
-        self.status("Done")
+        self._status("Done")
 
-        self.status("Awaiting a response from Boxee")
+        self._status("Awaiting a response from Boxee")
         while True:
 
             (buf, address) = sock.recvfrom(2048)
@@ -62,60 +89,102 @@ class BoxeeRemote:
 
             return buf
 
-    def parse_boxee_response( self, response ):
+    def _parse_boxee_response( self, response ):
         """ Parses the discovery response UDP packet XML """
         from xml.dom import minidom
 
-        self.status("Parsing response from Boxee:\n" + response)
+        self._status("Parsing response from Boxee:\n" + response)
 
         dom = minidom.parseString(response)
 
         for node in dom.getElementsByTagName('BDP1'):
             self.BOXEE_PORT = node.getAttribute('httpPort')
 
-    def convert_command( self, human ):
+    def _convert_command( self, human ):
         """ Converts a command like 'vol 50' to 'SetVolume(50)' or passes thru"""
+        
+        shortcut_map = {
+            'm':'mute',
+            'p':'pause',
+            's':'stop',
+            'pn':'PlayNext',
+            'pp':'PlayPrev'
+        }
+        
+        if human in shortcut_map.keys():
+            return shortcut_map[human]
+        
+        # Volume
+        if human[:3] == 'vol':
+            return 'SetVolume(%s)' % human[4:]
+        
         return human
 
-    def run_human_command( self, command ):
-        self.run_command( self.convert_command( command ) )
-
-    def run_command( self, command, argument=None ):
-        """ Runs a command against the boxee box """
-        url = self.BOXEE_API_URL % ( self.BOXEE_ADDRESS, self.BOXEE_PORT, command, argument )
-        urllib2.urlopen(url)
-    
-    def status( self, msg ):
+    def _status( self, msg ):
         if self.DEBUG:
             print msg
 
 def main():
 
+    """
+    TODO impliment these:
+    
+    GetVolume - Retrieves the current volume setting as a percentage of the maximum possible value.
+    GetPercentage - Retrieves the current playing position of the currently playing media as a percentage of the media's length.
+    """
+
+    USAGE = """
+FROM THE TERMINAL
+
+example:
+./boxee vol 50
+
+INTERACTIVE MODE
+Commands
+
+shortcut | command - Command description.
+
+   | vol N - Sets the volume as a percentage of the maximum possible, where 0 <= N <= 100 (eg: 'vol 50')
+ m | mute - Toggles the sound on/off.
+
+ p | pause - Pauses the currently playing media.
+ s | stop - Stops the currently playing media.
+pn | playnext - Starts playing/showing the next media/image in the current playlist or, if currently showing a slidshow, the slideshow playlist.
+pp | playnext - Starts playing/showing the previous media/image in the current playlist or, if currently showing a slidshow, the slideshow playlist.
+
+   | SeekPercentage(percent) - Sets the playing position of the currently playing media as a percentage of the media's length.
+   | SeekPercentageRelative(relative-percentage) - Adds/Subtracts the current percentage on to the current postion in the song
+
+ e | exit - exit this app
+ h | help - print this message
+    """
+    
     boxee = BoxeeRemote()
 
-    if not boxee.BOXEE_ADDRESS or not boxee.BOXEE_PORT:
-        boxee.parse_boxee_response( boxee.broadcast_for_boxee_info() )
+    # run command line commands
+    # ./boxee.py vol 50
+    if len(sys.argv) > 1:
+        command = ' '.join(sys.argv[1:])
+        boxee.run_human_command( command )
+        sys.exit()
+        
+    
+    print USAGE
 
-    interactive_mode = False
-
-    import sys    
-    for arg in sys.argv:
-        if arg == '-r':
-            pass
-        if arg == '-i':
-            interactive_mode = True
-    
-    #boxee.run_command("Pause")
-    
-    
-    if interactive_mode:
-        print "Enter commands: "
-        print "See http://developer.boxee.tv/Remote_Control_Interface for a full list"
-        while True:
-            boxee.run_human_command( raw_input('boxee: ') )
+    while True:
+        
+        command = raw_input('\nenter command: ')
+        
+        if command in ["e", "exit"]:
+            sys.exit()
+        
+        elif command in ["h", "help"]:
+            print USAGE
+        
+        else:
+            boxee.run_human_command( command )
     
 
-# RUN
-main()
-# TODO: cmd line args
+if __name__ == '__main__': 
+    main()
 
